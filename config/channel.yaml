@@ -26,7 +26,10 @@ llm:
   image_model: gpt-image-1
 
 voice:
-  model: eleven_multilingual_v2
+  # "gemini" (free tier, uses GEMINI_API_KEY) or "elevenlabs" (paid; your cast's own voices)
+  provider: gemini
+  gemini_model: gemini-3.8-flash-tts
+  model: eleven_multilingual_v2      # ElevenLabs settings
   output_format: mp3_44100_128
 
 youtube:

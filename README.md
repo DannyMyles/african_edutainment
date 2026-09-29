@@ -31,8 +31,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # already d
 cp .env.example .env        # add GEMINI_API_KEY (free) and ELEVENLABS_API_KEY
 ```
 
-- **Cast voices:** put each character's ElevenLabs `voice_id` in `config/characters.yaml`.
-  Use your voice actors (or clones of their voices made with their **written consent**).
+- **Cast voices:** by default voices come from **Gemini text-to-speech** (free tier, same
+  `GEMINI_API_KEY`): each character has a `gemini_voice` and `gemini_style` in
+  `config/characters.yaml`. For the real show, switch `voice.provider` to `elevenlabs` and put
+  each character's `voice_id` there: your voice actors, or clones made with their
+  **written consent**.
 - **Character art:** transparent PNG renders from your 2D rig go in
   `assets/characters/<Name>/<pose>.png` (`default.png` is the fallback). Until then, scenes
   render as placeholder cards saying what the artist needs to draw.

@@ -1,6 +1,8 @@
 # The recurring cast (from the pilot plan). Heritage details must be designed WITH
 # consultants from each community before designs are locked.
 #
+# gemini_voice / gemini_style: used when voice.provider is "gemini" (free). Styles are
+#           delivery notes only; have reviewers check any accent sounds natural, not put on.
 # voice_id: ElevenLabs voice ID. Use your cast's voices (human actors, or clones made
 #           with their WRITTEN consent). Leave blank until cast; mock mode needs none.
 # images:   put rendered poses in assets/characters/<Name>/<pose>.png
@@ -8,42 +10,56 @@
 # color:    used for placeholder cards until artwork exists.
 
 Narrator:
+  gemini_voice: Sulafat
+  gemini_style: "warm, friendly storyteller, calm pace"
   voice_id: ""
   color: "#1f6f5c"
   role: "Warm storyteller voice; frames the episode."
   voice_settings: { stability: 0.55, similarity_boost: 0.75, style: 0.2 }
 
 Zawadi:
+  gemini_voice: Leda
+  gemini_style: "confident 8-year-old girl, quick and eager, Kenyan English accent"
   voice_id: ""
   color: "#e0782f"
   role: "8. Kenyan. Inventor; confident; impatient, skips steps. Science & engineering."
   voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.35 }
 
 Kito:
+  gemini_voice: Puck
+  gemini_style: "playful, curious 6-year-old boy, full of wonder, Kenyan English accent"
   voice_id: ""
   color: "#3a86c8"
   role: "6. Zawadi's cousin. Funny, curious, asks 'but WHY?'. Stands in for the viewer."
   voice_settings: { stability: 0.4, similarity_boost: 0.75, style: 0.45 }
 
 Ada:
+  gemini_voice: Autonoe
+  gemini_style: "bright, lively 8-year-old girl who loves words, Nigerian English accent"
   voice_id: ""
   color: "#8e44ad"
   role: "8. Nigerian (Igbo) family in Nairobi. Storyteller, loves languages; a bit bossy."
   voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3 }
 
 Tesfa:
+  gemini_voice: Achird
+  gemini_style: "calm, thoughtful 9-year-old boy, gentle and soft-spoken"
   voice_id: ""
   color: "#2e8b57"
   role: "9. Ethiopian-Kenyan. Calm, notices patterns, loves numbers; shy."
   voice_settings: { stability: 0.6, similarity_boost: 0.75, style: 0.15 }
 
 "Cucu Njeri":
+  gemini_voice: Gacrux
+  gemini_style: "warm, witty grandmother, unhurried, Kenyan English accent"
   voice_id: ""
   color: "#b5651d"
   role: "Zawadi's grandmother (Kikuyu). Warm, witty keeper of stories — always attributes them."
   voice_settings: { stability: 0.65, similarity_boost: 0.8, style: 0.2 }
 
 Mjusi:
+  gemini_voice: Fenrir
+  gemini_style: "over-confident, comic little gecko, very sure of himself, cheeky"
   voice_id: ""
   color: "#6b8e23"
   role: "A gecko on the wall. Over-confident, usually wrong — voices the misconception kids correct."
