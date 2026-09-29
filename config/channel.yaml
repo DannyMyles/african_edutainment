@@ -16,6 +16,8 @@ video:
   outro_clip: ""
   music: ""                        # e.g. assets/music/bed.mp3 (human-composed or licensed)
   music_volume: 0.12
+  use_test_cast: true              # fall back to the code-drawn TEST characters when real art is missing
+  lip_sync: true                   # switch mouth images with the voice (needs <pose>.mouth1/.mouth2.png)
 
 llm:
   # "gemini" (free tier: Google AI Studio key) or "openai" (paid per use)

@@ -17,7 +17,7 @@ from datetime import date
 
 import yaml
 
-from . import assemble, preview, review, script, upload, visuals, voice
+from . import assemble, preview, puppets, review, script, upload, visuals, voice
 from .project import EPISODES, Episode, PipelineError, channel, slugify
 
 
@@ -74,6 +74,8 @@ def cmd_produce(a):
     print("2/3 visuals")
     kinds = visuals.run(ep, ai_backgrounds=a.ai_backgrounds)
     print("   ", ", ".join(f"{n} {k}" for k, n in kinds.items()))
+    if kinds.get("test character"):
+        print("    (TEST characters are stand-ins: real art in assets/characters/ replaces them)")
     if kinds.get("placeholder"):
         print("    (placeholder cards show what art is needed — add renders to assets/characters/)")
     print("3/3 assemble")
@@ -107,6 +109,12 @@ def cmd_play(a):
         target = ep.final
     print(f"Playing {target.relative_to(ep.dir.parent.parent)}")
     preview.play(target)
+
+
+def cmd_test_cast(a):
+    names = puppets.build()
+    print(f"Drew TEST characters for {', '.join(names)} in assets/test-cast/ "
+          "(9 poses × 3 mouth shapes each). Real art in assets/characters/ always takes priority.")
 
 
 def cmd_status(a):
@@ -175,6 +183,9 @@ def main(argv=None):
     pl.add_argument("slug")
     pl.add_argument("--scene", type=int, help="play just this scene's voice line")
     pl.set_defaults(fn=cmd_play)
+
+    tc = sub.add_parser("test-cast", help="(re)draw the stand-in TEST characters")
+    tc.set_defaults(fn=cmd_test_cast)
 
     st = sub.add_parser("status", help="where each episode is")
     st.add_argument("slug", nargs="?")

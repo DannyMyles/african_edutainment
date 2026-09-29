@@ -78,6 +78,15 @@ cp .env.example .env        # add GEMINI_API_KEY (free) and ELEVENLABS_API_KEY
 ./edupipe.sh play <slug> --scene 3   # just one line of dialogue
 ```
 
+**Test characters and lip-sync.** Until real artwork exists, scenes use simple code-drawn
+TEST characters (`assets/test-cast/`, redraw with `./edupipe.sh test-cast`). Every pose has three
+mouth shapes (`<pose>.png` closed, `<pose>.mouth1.png` half, `<pose>.mouth2.png` open); while
+rendering, the pipeline measures the voice's loudness on each video frame and shows the
+matching mouth. Real art uses the same three files per pose; drop them into
+`assets/characters/<Name>/` and they replace the test versions automatically. For richer
+lip-sync later (6–9 mouth shapes matched to sounds), rig the characters in Cartoon Animator or
+Adobe Character Animator, or use Rhubarb Lip Sync.
+
 The **Characters** tab shows each character's pose images, and flags in orange every pose your
 scripts use that doesn't exist yet: your shopping list for the illustrator. Character
 briefs for consultants and the illustrator are in `docs/character-briefs.md`.

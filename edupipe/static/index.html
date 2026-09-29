@@ -203,6 +203,14 @@ function renderMain() {
   });
 }
 
+/** A missing-art tile: shows the TEST drawing if there is one, else a dashed placeholder. */
+function tile(c, pose, note, needed) {
+  const test = c.test && c.test[pose];
+  return `<div class="pose missing ${needed ? "needed" : ""}" title="${esc(note)}">
+    <div class="img">${test ? `<img src="${esc(test)}" alt="${esc(c.name)} ${esc(pose)} (test)" data-zoom>` : esc(note)}</div>
+    <span>${esc(pose)}${test ? " · test" : ""}</span></div>`;
+}
+
 function renderCast() {
   const needed = cast.reduce((n, c) => n + c.missing_used.length, 0);
   document.getElementById("main").innerHTML = `
@@ -210,7 +218,7 @@ function renderCast() {
       <p>Pose images live in <code>assets/characters/&lt;Name&gt;/&lt;pose&gt;.png</code>: transparent PNG, full body, same scale for everyone.</p>
     </header>
     <p class="castHint" style="margin-top:12px">${needed
-      ? `<b style="color:var(--warn)">${needed} pose${needed === 1 ? "" : "s"} used in your scripts ${needed === 1 ? "is" : "are"} missing</b> (orange). Until then those scenes show placeholder cards.`
+      ? `<b style="color:var(--warn)">${needed} pose${needed === 1 ? "" : "s"} used in your scripts ${needed === 1 ? "has" : "have"} no real artwork yet</b> (orange). Until the illustrator delivers them, videos use the code-drawn TEST characters (dashed tiles).`
       : "Every pose your scripts use exists."}</p>
     <div class="cast">${cast.map((c) => `
       <div class="card">
@@ -224,8 +232,8 @@ function renderCast() {
         </div>
         <div class="poses">
           ${c.poses.map((p) => `<div class="pose"><div class="img"><img src="${esc(p.src)}" alt="${esc(c.name)} ${esc(p.pose)}" data-zoom></div><span>${esc(p.pose)}</span></div>`).join("")}
-          ${c.missing_used.map((m) => `<div class="pose missing needed"><div class="img">needed by ${m.episodes.length} episode${m.episodes.length === 1 ? "" : "s"}</div><span>${esc(m.pose)}</span></div>`).join("")}
-          ${c.missing_standard.filter((p) => !c.missing_used.some((m) => m.pose === p)).map((p) => `<div class="pose missing"><div class="img">not yet</div><span>${esc(p)}</span></div>`).join("")}
+          ${c.missing_used.map((m) => tile(c, m.pose, `needed by ${m.episodes.length} episode${m.episodes.length === 1 ? "" : "s"}`, true)).join("")}
+          ${c.missing_standard.filter((p) => !c.missing_used.some((m) => m.pose === p)).map((p) => tile(c, p, "not yet", false)).join("")}
         </div>
       </div>`).join("")}</div>`;
   document.getElementById("main").querySelectorAll("[data-zoom]").forEach((img) => img.onclick = () => {

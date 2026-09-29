@@ -18,15 +18,44 @@ def _audio_for(ep, i):
     return found[0]
 
 
-def _kenburns(frame_path, size, dur, zoom):
-    """A slow push-in: each frame crops a slightly smaller centred window and scales it
-    back up. Much faster than MoviePy's per-frame resize + compositing."""
-    img = Image.open(frame_path).convert("RGB").resize(size, Image.LANCZOS)
-    if not zoom:
-        return ImageClip(np.asarray(img)).with_duration(dur)
+def mouth_levels(audio, fps, speech_seconds):
+    """0/1/2 (closed/half/open) for every video frame, from the voice's loudness."""
+    rate = 16000
+    samples = audio.to_soundarray(fps=rate)
+    if samples.ndim > 1:
+        samples = samples.mean(axis=1)
+    per = int(rate / fps)
+    n = int(np.ceil(speech_seconds * fps))
+    rms = np.array([np.sqrt(np.mean(samples[k * per:(k + 1) * per] ** 2)) if k * per < len(samples) else 0.0
+                    for k in range(n)])
+    peak = np.percentile(rms[rms > 0], 95) if np.any(rms > 0) else 1.0
+    speaking = rms / (peak or 1.0) >= 0.12
+    # Among speaking frames, only the loudest ~40% open fully: talking reads as quick
+    # open/half alternation, not a mouth held wide open.
+    cut = np.percentile(rms[speaking], 60) if np.any(speaking) else 0
+    levels = np.where(~speaking, 0, np.where(rms >= cut, 2, 1))
+    # smooth: hold each shape for at least 2 frames so the mouth doesn't flicker
+    for k in range(1, len(levels) - 1):
+        if levels[k] != levels[k - 1] and levels[k] != levels[k + 1]:
+            levels[k] = levels[k - 1]
+    return levels
+
+
+def _kenburns(frame_paths, size, dur, zoom, levels=None, fps=30):
+    """A slow push-in (crop a shrinking centred window, scale back up) — much faster than
+    MoviePy's per-frame resize. With `levels`, picks the mouth frame for each video frame."""
+    imgs = [Image.open(p).convert("RGB").resize(size, Image.LANCZOS) for p in frame_paths]
+    if not zoom and levels is None:
+        return ImageClip(np.asarray(imgs[0])).with_duration(dur)
     w, h = size
 
     def frame(t):
+        img = imgs[0]
+        if levels is not None:
+            k = int(t * fps)
+            img = imgs[levels[k]] if k < len(levels) else imgs[0]
+        if not zoom:
+            return np.asarray(img)
         s = 1 + zoom * min(t, dur) / dur
         cw, ch = w / s, h / s
         box = ((w - cw) / 2, (h - ch) / 2, (w + cw) / 2, (h + ch) / 2)
@@ -59,7 +88,13 @@ def run(ep):
 
     clips, t0 = [], 0.0
     for i, (frame, audio, dur) in enumerate(zip(frames, audios, durations)):
-        layers = [_kenburns(frame, size, dur, vcfg["ken_burns_zoom"])]
+        mouths = [frame.with_name(f"{frame.stem}.mouth{n}.png") for n in (1, 2)]
+        if all(m.exists() for m in mouths):
+            levels = mouth_levels(audio, vcfg["fps"], audio.duration)
+            base = _kenburns([frame, *mouths], size, dur, vcfg["ken_burns_zoom"], levels, vcfg["fps"])
+        else:
+            base = _kenburns([frame], size, dur, vcfg["ken_burns_zoom"])
+        layers = [base]
         for a, b, text in cues:
             if t0 <= a < t0 + dur - 1e-6:
                 cap_path = tmp / f"cap_{len(list(tmp.iterdir())):03d}.png"

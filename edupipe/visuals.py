@@ -50,11 +50,23 @@ def _cover(img, size):
 
 
 def _pose_path(speaker, pose):
-    d = ASSETS / "characters" / speaker
-    for name in (f"{pose}.png", "default.png"):
-        if (d / name).exists():
-            return d / name
+    """Real art first; then the TEST cast (if enabled); requested pose, then default."""
+    dirs = [ASSETS / "characters" / speaker]
+    if channel()["video"].get("use_test_cast", True):
+        dirs.append(ASSETS / "test-cast" / speaker)
+    for d in dirs:
+        for name in (f"{pose}.png", "default.png"):
+            if (d / name).exists():
+                return d / name
     return None
+
+
+def _mouth_variants(pose_path):
+    """[closed, half, open] images for lip-sync, or just [closed] if the variants don't exist."""
+    variants = [pose_path.with_name(f"{pose_path.stem}.mouth{n}.png") for n in (1, 2)]
+    if channel()["video"].get("lip_sync", True) and all(v.exists() for v in variants):
+        return [pose_path] + variants
+    return [pose_path]
 
 
 def _ai_background(ep, i, scene, size):
@@ -93,26 +105,31 @@ def _placeholder(size, scene, color, i):
 def _frame(ep, i, scene, size, ai):
     art = ep.art_dir / f"scene_{i:02d}.png"
     if art.exists():
-        return _cover(Image.open(art).convert("RGB"), size), "art"
+        return [_cover(Image.open(art).convert("RGB"), size)], "art"
     cast = characters()
     pose = _pose_path(scene["speaker"], scene.get("pose", "default"))
     if not pose:
-        return _placeholder(size, scene, cast[scene["speaker"]].get("color", "#333333"), i), "placeholder"
+        return [_placeholder(size, scene, cast[scene["speaker"]].get("color", "#333333"), i)], "placeholder"
     bg_path = None
     if ai:
         bg_path = _ai_background(ep, i, scene, size)
     elif scene.get("background") and (ASSETS / "backgrounds" / f"{scene['background']}.png").exists():
         bg_path = ASSETS / "backgrounds" / f"{scene['background']}.png"
     bg = _cover(Image.open(bg_path).convert("RGB"), size) if bg_path else _gradient(size, cast[scene["speaker"]].get("color", "#333"))
-    char = Image.open(pose).convert("RGBA")
     w, h = size
     target_h = int(h * (0.55 if h > w else 0.75))
-    char = char.resize((int(char.width * target_h / char.height), target_h), Image.LANCZOS)
-    # Portrait: character sits low-centre above the caption band; landscape: bottom-left third.
-    x = (w - char.width) // 2 if h > w else int(w * 0.33 - char.width / 2)
-    y = int(h * 0.64) - char.height if h > w else h - char.height
-    bg.paste(char, (x, y), char)
-    return bg, "character"
+    frames = []
+    for path in _mouth_variants(pose):
+        char = Image.open(path).convert("RGBA")
+        char = char.resize((int(char.width * target_h / char.height), target_h), Image.LANCZOS)
+        # Portrait: character sits low-centre above the caption band; landscape: bottom-left third.
+        x = (w - char.width) // 2 if h > w else int(w * 0.33 - char.width / 2)
+        y = int(h * 0.64) - char.height if h > w else h - char.height
+        frame = bg.copy()
+        frame.paste(char, (x, y), char)
+        frames.append(frame)
+    kind = "test character" if "test-cast" in pose.parts else "character"
+    return frames, kind
 
 
 def run(ep, ai_backgrounds=False):
@@ -124,7 +141,11 @@ def run(ep, ai_backgrounds=False):
     ep.frames_dir.mkdir(exist_ok=True)
     kinds = {}
     for i, scene in enumerate(ep.load_script()["scenes"], 1):
-        img, kind = _frame(ep, i, scene, size, ai_backgrounds)
-        img.save(ep.frames_dir / f"scene_{i:02d}.png")
+        imgs, kind = _frame(ep, i, scene, size, ai_backgrounds)
+        for old in ep.frames_dir.glob(f"scene_{i:02d}.mouth*.png"):
+            old.unlink()
+        imgs[0].save(ep.frames_dir / f"scene_{i:02d}.png")
+        for n, img in enumerate(imgs[1:], 1):  # lip-sync mouth frames
+            img.save(ep.frames_dir / f"scene_{i:02d}.mouth{n}.png")
         kinds[kind] = kinds.get(kind, 0) + 1
     return kinds

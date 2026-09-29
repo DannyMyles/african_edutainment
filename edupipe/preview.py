@@ -97,7 +97,9 @@ def cast_summary():
     out = []
     for name, c in characters().items():
         folder = ASSETS / "characters" / name
-        have = sorted(p.stem for p in folder.glob("*.png")) if folder.exists() else []
+        have = sorted(p.stem for p in folder.glob("*.png") if "." not in p.stem) if folder.exists() else []
+        test_folder = ASSETS / "test-cast" / name
+        test = sorted(p.stem for p in test_folder.glob("*.png") if "." not in p.stem) if test_folder.exists() else []
         wanted = used.get(name, {})
         out.append({
             "name": name,
@@ -107,6 +109,7 @@ def cast_summary():
             "style": c.get("gemini_style", ""),
             "poses": [{"pose": p, "src": f"/cast/{name}/{p}.png?v={_mtime(folder / (p + '.png'))}"} for p in have],
             "has_default": "default" in have,
+            "test": {p: f"/test-cast/{name}/{p}.png?v={_mtime(test_folder / (p + '.png'))}" for p in test},
             "missing_used": sorted(
                 ({"pose": p, "episodes": sorted(eps)} for p, eps in wanted.items() if p not in have),
                 key=lambda x: -len(x["episodes"])),
@@ -190,10 +193,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, json.dumps(all_episodes()).encode(), "application/json")
         if path == "/api/cast":
             return self._send(200, json.dumps(cast_summary()).encode(), "application/json")
-        m = re.match(r"^/cast/([^/]+)/([A-Za-z0-9 _-]+\.png)$", path)
+        m = re.match(r"^/(cast|test-cast)/([^/]+)/([A-Za-z0-9 _.-]+\.png)$", path)
         if m:
-            base = (ASSETS / "characters").resolve()
-            target = (base / m.group(1) / m.group(2)).resolve()
+            base = (ASSETS / ("characters" if m.group(1) == "cast" else "test-cast")).resolve()
+            target = (base / m.group(2) / m.group(3)).resolve()
             if target.is_file() and base in target.parents:
                 return self._file(target)
         m = re.match(r"^/files/([^/]+)/(.+)$", path)

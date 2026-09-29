@@ -120,7 +120,11 @@ idea, in about a minute.
    - the same scale for every character (the height lineup is the reference),
    - at least **1500 px tall**, transparent background, no cast shadow,
    - named exactly like this: `Kito/surprised.png`, `Zawadi/default.png`, …
-5. **Source files:** layered (PSD, AI, or Krita), with **eyes, mouth, arms and head on
+5. **Mouth shapes for lip-sync:** for every pose, two extra copies that are identical except
+   for the mouth: `surprised.mouth1.png` (half open) and `surprised.mouth2.png` (open). The
+   normal `surprised.png` is the closed mouth. The video switches between them in time with
+   the voice.
+6. **Source files:** layered (PSD, AI, or Krita), with **eyes, mouth, arms and head on
    separate layers**. This lets us rig the characters for animation later.
 
 **Ground rules**
