@@ -120,3 +120,4 @@ secrets/                 YouTube OAuth files (git-ignored)
 - Caption timing is spread across each line's audio in proportion to its length. It's good
   enough for short lines; check `captions.srt` before uploading it as a sidecar.
 - A 30-second Short takes about 3 minutes to render on this laptop.
+# african_edutainment
