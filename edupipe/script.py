@@ -3,7 +3,7 @@ import json
 
 import yaml
 
-from .project import ROOT, PipelineError, channel, characters
+from .project import POSES, ROOT, PipelineError, channel, characters
 
 BEATS = ["hook", "problem", "investigate", "concept", "adventure", "discovery", "recap", "question"]
 
@@ -15,7 +15,7 @@ def _system_prompt(brief):
     template = (ROOT / "prompts" / "script_system.md").read_text(encoding="utf-8")
     return template.format(
         channel=cfg["channel_name"], age=brief["age"], cast=cast,
-        format=brief["format"], seconds=fmt["max_seconds"],
+        format=brief["format"], seconds=fmt["max_seconds"], poses=", ".join(POSES),
     )
 
 
@@ -152,6 +152,8 @@ def validate(script):
             problems.append(f"scene {i}: empty narration")
         if any(ch in text for ch in "[]{}*#"):
             problems.append(f"scene {i}: narration contains stage directions/markup")
+        if sc.get("pose", "default") not in POSES:
+            problems.append(f"scene {i}: pose '{sc.get('pose')}' isn't one of {', '.join(POSES)}")
         if sc.get("beat") not in BEATS:
             problems.append(f"scene {i}: unknown beat '{sc.get('beat')}'")
     return problems

@@ -47,6 +47,10 @@ def channel():
     return cfg
 
 
+# The poses an illustrator delivers for every character (assets/characters/<Name>/<pose>.png).
+POSES = ["default", "happy", "surprised", "thinking", "explaining", "excited", "curious", "proud", "singing"]
+
+
 def characters():
     return load_yaml(ROOT / "config" / "characters.yaml")
 

@@ -78,6 +78,10 @@ cp .env.example .env        # add GEMINI_API_KEY (free) and ELEVENLABS_API_KEY
 ./edupipe.sh play <slug> --scene 3   # just one line of dialogue
 ```
 
+The **Characters** tab shows each character's pose images, and flags in orange every pose your
+scripts use that doesn't exist yet: your shopping list for the illustrator. Character
+briefs for consultants and the illustrator are in `docs/character-briefs.md`.
+
 The preview site lists every episode with its progress (script → approved → voiced →
 video → uploaded), and for the selected one shows:
 - the video with captions (seekable)

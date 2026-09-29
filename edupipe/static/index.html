@@ -66,6 +66,24 @@
   audio { width: 100%; height: 32px; margin-top: 6px; }
   code { background: var(--chip); padding: 2px 6px; border-radius: 6px; font-size: 12.5px; }
   .next { margin-top: 10px; font-size: 13px; }
+  .tabs { display: flex; gap: 4px; background: var(--chip); padding: 4px; border-radius: 10px; margin: 0 4px 14px; }
+  .tabs button { flex: 1; border: 0; background: none; font: inherit; font-weight: 600; font-size: 13px; color: var(--muted); padding: 7px; border-radius: 7px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .cast { display: grid; gap: 18px; }
+  .who { display: flex; gap: 12px; align-items: flex-start; }
+  .swatch { width: 38px; height: 38px; border-radius: 10px; flex: none; }
+  .who h3 { margin: 0; font-size: 17px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+  .who p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .poses { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; margin-top: 14px; }
+  .pose { border-radius: 10px; border: 1px solid var(--line); overflow: hidden; font-size: 12px; text-align: center; }
+  .pose .img { aspect-ratio: 4/5; display: grid; place-items: center;
+    background: repeating-conic-gradient(var(--chip) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+  .pose img { max-width: 100%; max-height: 100%; cursor: zoom-in; }
+  .pose span { display: block; padding: 5px 4px; font-weight: 600; }
+  .pose.missing { border-style: dashed; color: var(--muted); }
+  .pose.missing .img { background: none; font-size: 11px; padding: 8px; }
+  .pose.needed { border-color: var(--warn); color: var(--warn); background: var(--warn-050); }
+  .castHint { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
   dialog { border: 0; padding: 0; background: transparent; }
   dialog img { max-width: 92vw; max-height: 92vh; border-radius: 10px; }
   dialog::backdrop { background: rgba(0,0,0,.75); }
@@ -80,7 +98,10 @@
 <body>
 <div class="app">
   <aside>
-    <h1>Episodes</h1>
+    <div class="tabs" role="group" aria-label="View">
+      <button type="button" data-view="episodes" aria-pressed="true">Episodes</button>
+      <button type="button" data-view="cast" aria-pressed="false">Characters</button>
+    </div>
     <div id="list"></div>
   </aside>
   <main id="main"><p class="empty">Loading…</p></main>
@@ -89,7 +110,8 @@
 
 <script>
 const STEPS = ["script", "approved", "voiced", "video", "uploaded"];
-let episodes = [], current = null, lastSig = "";
+let episodes = [], current = null, lastSig = "", cast = [], castSig = "";
+let view = location.hash === "#characters" ? "cast" : "episodes";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const file = (ep, p) => `/files/${encodeURIComponent(ep.slug)}/${p}`;
@@ -105,6 +127,7 @@ function nextStep(ep) {
 }
 
 function renderList() {
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
   document.getElementById("list").innerHTML = episodes.length
     ? episodes.map((e) => `
       <button class="ep" data-slug="${esc(e.slug)}" aria-current="${e.slug === current}">
@@ -115,7 +138,7 @@ function renderList() {
         </div>
       </button>`).join("")
     : `<p class="empty" style="margin:8px">No episodes yet.<br>Run <code>./edupipe.sh new "topic"</code></p>`;
-  document.querySelectorAll(".ep").forEach((b) => b.onclick = () => { current = b.dataset.slug; location.hash = current; render(); });
+  document.querySelectorAll(".ep").forEach((b) => b.onclick = () => { current = b.dataset.slug; view = "episodes"; location.hash = current; render(); });
 }
 
 function renderMain() {
@@ -180,7 +203,55 @@ function renderMain() {
   });
 }
 
-function render() { renderList(); renderMain(); }
+function renderCast() {
+  const needed = cast.reduce((n, c) => n + c.missing_used.length, 0);
+  document.getElementById("main").innerHTML = `
+    <header><h2>Characters</h2>
+      <p>Pose images live in <code>assets/characters/&lt;Name&gt;/&lt;pose&gt;.png</code>: transparent PNG, full body, same scale for everyone.</p>
+    </header>
+    <p class="castHint" style="margin-top:12px">${needed
+      ? `<b style="color:var(--warn)">${needed} pose${needed === 1 ? "" : "s"} used in your scripts ${needed === 1 ? "is" : "are"} missing</b> (orange). Until then those scenes show placeholder cards.`
+      : "Every pose your scripts use exists."}</p>
+    <div class="cast">${cast.map((c) => `
+      <div class="card">
+        <div class="who">
+          <span class="swatch" style="background:${esc(c.color)}"></span>
+          <div>
+            <h3>${esc(c.name)}</h3>
+            <p>${esc(c.role)}</p>
+            <p>Voice: ${esc(c.voice || "—")}${c.style ? ` · <i>${esc(c.style)}</i>` : ""} · in ${c.scenes} scene${c.scenes === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+        <div class="poses">
+          ${c.poses.map((p) => `<div class="pose"><div class="img"><img src="${esc(p.src)}" alt="${esc(c.name)} ${esc(p.pose)}" data-zoom></div><span>${esc(p.pose)}</span></div>`).join("")}
+          ${c.missing_used.map((m) => `<div class="pose missing needed"><div class="img">needed by ${m.episodes.length} episode${m.episodes.length === 1 ? "" : "s"}</div><span>${esc(m.pose)}</span></div>`).join("")}
+          ${c.missing_standard.filter((p) => !c.missing_used.some((m) => m.pose === p)).map((p) => `<div class="pose missing"><div class="img">not yet</div><span>${esc(p)}</span></div>`).join("")}
+        </div>
+      </div>`).join("")}</div>`;
+  document.getElementById("main").querySelectorAll("[data-zoom]").forEach((img) => img.onclick = () => {
+    const d = document.getElementById("zoom"); d.querySelector("img").src = img.src; d.showModal();
+  });
+}
+
+function render() {
+  renderList();
+  view === "cast" ? renderCast() : renderMain();
+}
+
+async function loadCast() {
+  const data = await (await fetch("/api/cast")).json();
+  const sig = JSON.stringify(data);
+  if (sig === castSig) return;
+  castSig = sig; cast = data;
+  if (view === "cast") renderCast();
+}
+
+document.querySelectorAll("[data-view]").forEach((b) => b.onclick = () => {
+  view = b.dataset.view;
+  location.hash = view === "cast" ? "characters" : (current || "");
+  render();
+  if (view === "cast") loadCast();
+});
 
 async function load() {
   const data = await (await fetch("/api/episodes")).json();
@@ -191,13 +262,15 @@ async function load() {
   episodes = data;
   const fromHash = decodeURIComponent(location.hash.slice(1));
   if (!current) current = episodes.some((e) => e.slug === fromHash) ? fromHash : episodes[0]?.slug;
+  if (view === "cast") { renderList(); return; }
   const playing = document.querySelector("video") && !document.querySelector("video").paused;
   playing ? renderList() : render();
 }
 
 document.getElementById("zoom").onclick = (e) => e.currentTarget.close();
 load();
-setInterval(load, 4000);
+loadCast();
+setInterval(() => { load(); if (view === "cast") loadCast(); }, 4000);
 </script>
 </body>
 </html>

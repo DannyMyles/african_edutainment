@@ -20,6 +20,7 @@ hook → problem → investigate → concept → adventure → discovery → rec
 - Name cultures precisely ("in Kikuyu tradition"), never "in Africa".
 - No frightening imagery, dangerous activities, heat/sharp tools/chemicals; any experiment says "with a grown-up".
 - No brands, products, or buying.
+- "pose" must be exactly one of: {poses}.
 - Total narration for a "{format}" must fit about {seconds} seconds (~2.5 words per second).
 
 ## Output

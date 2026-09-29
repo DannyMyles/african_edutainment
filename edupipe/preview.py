@@ -15,7 +15,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from . import review
-from .project import EPISODES, ROOT, Episode, load_yaml
+from .project import ASSETS, EPISODES, POSES as STANDARD_POSES, ROOT, Episode, characters, load_yaml
 
 STATIC = ROOT / "edupipe" / "static"
 SLUG = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -75,6 +75,45 @@ def all_episodes():
         return []
     eps = [episode_summary(Episode(p.name)) for p in EPISODES.iterdir() if p.is_dir() and (p / "brief.yaml").exists()]
     return sorted(eps, key=lambda e: -e["updated"])
+
+
+
+
+def cast_summary():
+    """Each character's pose images, and which poses the scripts ask for that don't exist yet."""
+    used = {}
+    if EPISODES.exists():
+        for d in EPISODES.iterdir():
+            sj = d / "script.json"
+            if not sj.exists():
+                continue
+            try:
+                scenes = json.loads(sj.read_text(encoding="utf-8")).get("scenes", [])
+            except ValueError:
+                continue
+            for sc in scenes:
+                pose = (sc.get("pose") or "default").strip().lower()
+                used.setdefault(sc.get("speaker"), {}).setdefault(pose, set()).add(d.name)
+    out = []
+    for name, c in characters().items():
+        folder = ASSETS / "characters" / name
+        have = sorted(p.stem for p in folder.glob("*.png")) if folder.exists() else []
+        wanted = used.get(name, {})
+        out.append({
+            "name": name,
+            "role": c.get("role", ""),
+            "color": c.get("color", "#333333"),
+            "voice": c.get("gemini_voice") if not c.get("voice_id") else "ElevenLabs",
+            "style": c.get("gemini_style", ""),
+            "poses": [{"pose": p, "src": f"/cast/{name}/{p}.png?v={_mtime(folder / (p + '.png'))}"} for p in have],
+            "has_default": "default" in have,
+            "missing_used": sorted(
+                ({"pose": p, "episodes": sorted(eps)} for p, eps in wanted.items() if p not in have),
+                key=lambda x: -len(x["episodes"])),
+            "missing_standard": [p for p in STANDARD_POSES if p not in have],
+            "scenes": sum(len(e) for e in wanted.values()),
+        })
+    return out
 
 
 def srt_to_vtt(text):
@@ -149,6 +188,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/episodes":
             return self._send(200, json.dumps(all_episodes()).encode(), "application/json")
+        if path == "/api/cast":
+            return self._send(200, json.dumps(cast_summary()).encode(), "application/json")
+        m = re.match(r"^/cast/([^/]+)/([A-Za-z0-9 _-]+\.png)$", path)
+        if m:
+            base = (ASSETS / "characters").resolve()
+            target = (base / m.group(1) / m.group(2)).resolve()
+            if target.is_file() and base in target.parents:
+                return self._file(target)
         m = re.match(r"^/files/([^/]+)/(.+)$", path)
         if m and SLUG.match(m.group(1)):
             ep_dir = (EPISODES / m.group(1)).resolve()
