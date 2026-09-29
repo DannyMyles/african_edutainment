@@ -67,6 +67,26 @@ cp .env.example .env        # add OPENAI_API_KEY and ELEVENLABS_API_KEY
 ./edupipe.sh status
 ```
 
+## Previewing
+
+```bash
+./edupipe.sh preview            # opens http://127.0.0.1:8765
+./edupipe.sh play <slug>        # final.mp4 in ffplay (if installed) or your default player
+./edupipe.sh play <slug> --scene 3   # just one line of dialogue
+```
+
+The preview site lists every episode with its progress (script → approved → voiced →
+video → uploaded), and for the selected one shows:
+- the video with captions (seekable)
+- what the review still needs, or who approved it and when
+- each claim and whether it has a verified source
+- every scene: frame, speaker, line, the artist's note, and that line's audio
+- the exact next command to run
+
+It refreshes by itself as you work, without interrupting a playing video. It is read-only
+and only reachable from this computer: approving stays a deliberate step on the command
+line. (Install `ffplay` with `sudo apt install ffmpeg` if you want `play` to use it.)
+
 Changing one line and re-running `produce` only re-voices the lines that changed.
 
 ### Test everything offline (no API keys)

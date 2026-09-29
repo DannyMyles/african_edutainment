@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Episode Preview</title>
+<style>
+  :root {
+    --bg: #f6f7f7; --panel: #ffffff; --ink: #14171a; --muted: #5f6566; --line: #e3e6e6;
+    --brand: #0f8a4a; --brand-050: #e6f4ec; --warn: #b45309; --warn-050: #fff6e5;
+    --bad: #c0262d; --bad-050: #fdeceb; --chip: #eef1f1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1012; --panel: #16191c; --ink: #eceeef; --muted: #99a1a4; --line: #262b2f;
+      --brand: #3ccb7f; --brand-050: #11281c; --warn: #f0a44b; --warn-050: #2a1f10; --bad: #ff7b7b;
+      --bad-050: #2c1415; --chip: #1f2427; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  .app { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+  aside { border-right: 1px solid var(--line); background: var(--panel); padding: 18px 12px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  aside h1 { font-size: 15px; margin: 0 8px 14px; }
+  .ep { display: block; width: 100%; text-align: left; border: 0; background: none; color: inherit; font: inherit; cursor: pointer;
+        padding: 10px; border-radius: 10px; margin-bottom: 4px; }
+  .ep:hover { background: var(--chip); }
+  .ep[aria-current="true"] { background: var(--brand-050); }
+  .ep b { display: block; font-size: 13.5px; font-weight: 600; }
+  .ep small { color: var(--muted); font-size: 12px; }
+  .dots { display: flex; gap: 4px; margin-top: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .dot.on { background: var(--brand); }
+  main { padding: 24px 28px 60px; min-width: 0; }
+  .empty { color: var(--muted); margin-top: 40px; }
+  header h2 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 20px; }
+  .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--chip); color: var(--muted); }
+  .pill.on { background: var(--brand-050); color: var(--brand); }
+  .pill.mock { background: var(--warn-050); color: var(--warn); }
+  .grid { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 24px; align-items: start; }
+  .grid.landscape { grid-template-columns: 1fr; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  video { width: 100%; border-radius: 12px; background: #000; display: block; }
+  .noVideo { aspect-ratio: 9/16; display: grid; place-items: center; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 12px; padding: 20px; }
+  .landscape .noVideo { aspect-ratio: 16/9; }
+  .stack { display: grid; gap: 16px; }
+  ul.todo { margin: 0; padding-left: 18px; }
+  ul.todo li { margin: 4px 0; }
+  .ok { color: var(--brand); font-weight: 600; }
+  .claim { padding: 8px 0; border-top: 1px solid var(--line); }
+  .claim:first-of-type { border-top: 0; }
+  .claim .src { font-size: 12.5px; color: var(--muted); }
+  .tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; margin-right: 6px; }
+  .tag.ok2 { background: var(--brand-050); color: var(--brand); }
+  .tag.no { background: var(--bad-050); color: var(--bad); }
+  .scene { display: grid; grid-template-columns: 84px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .scene:first-child { border-top: 0; }
+  .scene img { width: 84px; border-radius: 8px; border: 1px solid var(--line); background: var(--chip); cursor: zoom-in; }
+  .landscape-frames .scene { grid-template-columns: 150px 1fr; }
+  .landscape-frames .scene img { width: 150px; }
+  .scene .meta { font-size: 12px; color: var(--muted); }
+  .scene .meta b { color: var(--ink); }
+  .scene q { display: block; margin: 4px 0 6px; font-size: 15px; quotes: "“" "”"; }
+  .scene .visual { font-size: 12.5px; color: var(--muted); }
+  audio { width: 100%; height: 32px; margin-top: 6px; }
+  code { background: var(--chip); padding: 2px 6px; border-radius: 6px; font-size: 12.5px; }
+  .next { margin-top: 10px; font-size: 13px; }
+  dialog { border: 0; padding: 0; background: transparent; }
+  dialog img { max-width: 92vw; max-height: 92vh; border-radius: 10px; }
+  dialog::backdrop { background: rgba(0,0,0,.75); }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .grid { grid-template-columns: 1fr; }
+    main { padding: 18px 16px 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Episodes</h1>
+    <div id="list"></div>
+  </aside>
+  <main id="main"><p class="empty">Loading…</p></main>
+</div>
+<dialog id="zoom"><img alt="" /></dialog>
+
+<script>
+const STEPS = ["script", "approved", "voiced", "video", "uploaded"];
+let episodes = [], current = null, lastSig = "";
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const file = (ep, p) => `/files/${encodeURIComponent(ep.slug)}/${p}`;
+
+function nextStep(ep) {
+  const s = ep.steps;
+  if (!s.script) return `./edupipe.sh script ${ep.slug}`;
+  if (!s.approved) return ep.review_missing.length ? `fill episodes/${ep.slug}/review.yaml, then ./edupipe.sh approve ${ep.slug} --by "Your Name"` : `./edupipe.sh approve ${ep.slug} --by "Your Name"`;
+  if (!s.video) return `./edupipe.sh produce ${ep.slug}`;
+  if (ep.mock) return "Mock episode: for testing only, it can't be uploaded.";
+  if (!s.uploaded) return `watch it, then ./edupipe.sh upload ${ep.slug}`;
+  return "Uploaded (private). Publish it in YouTube Studio.";
+}
+
+function renderList() {
+  document.getElementById("list").innerHTML = episodes.length
+    ? episodes.map((e) => `
+      <button class="ep" data-slug="${esc(e.slug)}" aria-current="${e.slug === current}">
+        <b>${esc(e.title || e.topic)}</b>
+        <small>${esc(e.format)} · ages ${esc(e.age)}${e.mock ? " · mock" : ""}</small>
+        <div class="dots" title="${STEPS.filter((k) => e.steps[k]).join(", ") || "not started"}">
+          ${STEPS.map((k) => `<span class="dot ${e.steps[k] ? "on" : ""}"></span>`).join("")}
+        </div>
+      </button>`).join("")
+    : `<p class="empty" style="margin:8px">No episodes yet.<br>Run <code>./edupipe.sh new "topic"</code></p>`;
+  document.querySelectorAll(".ep").forEach((b) => b.onclick = () => { current = b.dataset.slug; location.hash = current; render(); });
+}
+
+function renderMain() {
+  const main = document.getElementById("main");
+  const ep = episodes.find((e) => e.slug === current);
+  if (!ep) { main.innerHTML = `<p class="empty">Pick an episode.</p>`; return; }
+  const land = ep.format === "episode";
+
+  const review = ep.steps.approved
+    ? `<p class="ok">Approved by ${esc(ep.approved_by)}</p><p style="color:var(--muted);margin:0">${esc(ep.approved_at || "")}</p>`
+    : ep.review_missing.length
+      ? `<ul class="todo">${ep.review_missing.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>`
+      : `<p class="ok">Everything is filled in. Ready to approve.</p>`;
+
+  const claims = (ep.review_claims.length ? ep.review_claims : ep.claims).map((c) => {
+    const ok = c.verified && c.source;
+    return `<div class="claim"><span class="tag ${ok ? "ok2" : "no"}">${esc(c.id)} ${ok ? "verified" : "unverified"}</span>${esc(c.claim)}
+      ${c.culture ? `<div class="src">Culture: ${esc(c.culture)}</div>` : ""}
+      ${c.source ? `<div class="src">Source: ${esc(c.source)}${c.verified_by ? ` · checked by ${esc(c.verified_by)}` : ""}</div>` : ""}</div>`;
+  }).join("") || `<p style="color:var(--muted);margin:0">No claims listed.</p>`;
+
+  const scenes = ep.scenes.map((s) => `
+    <div class="scene">
+      ${s.frame ? `<img src="${file(ep, s.frame)}" alt="Scene ${s.n} frame" data-zoom />` : `<div></div>`}
+      <div>
+        <div class="meta">#${s.n} · ${esc(s.beat)} · <b>${esc(s.speaker)}</b>${s.pose ? ` (${esc(s.pose)})` : ""}</div>
+        <q>${esc(s.narration)}</q>
+        <div class="visual">${esc(s.visual)}</div>
+        ${s.audio ? `<audio controls preload="none" src="${file(ep, s.audio)}"></audio>` : ""}
+      </div>
+    </div>`).join("") || `<p style="color:var(--muted);margin:0">No script yet.</p>`;
+
+  main.innerHTML = `
+    <header>
+      <h2>${esc(ep.title || ep.topic)}</h2>
+      <p>${esc(ep.objective || "")}</p>
+    </header>
+    <div class="pills">
+      ${STEPS.map((k) => `<span class="pill ${ep.steps[k] ? "on" : ""}">${ep.steps[k] ? "✓ " : ""}${k}</span>`).join("")}
+      ${ep.mock ? `<span class="pill mock">MOCK — test only</span>` : ""}
+      ${ep.seconds ? `<span class="pill">${ep.seconds}s</span>` : ""}
+      ${ep.youtube_id ? `<a class="pill on" href="https://youtu.be/${esc(ep.youtube_id)}" target="_blank" rel="noopener">YouTube ↗</a>` : ""}
+    </div>
+    <div class="grid ${land ? "landscape" : ""}">
+      <div class="stack">
+        ${ep.video
+          ? `<video controls playsinline preload="metadata" src="${file(ep, ep.video)}">
+               ${ep.captions ? `<track kind="captions" srclang="en" label="English" src="${file(ep, ep.captions)}">` : ""}
+             </video>`
+          : `<div class="noVideo">No video yet.<br><code>./edupipe.sh produce ${esc(ep.slug)}</code></div>`}
+        <div class="card"><h3>Next step</h3><div class="next"><code>${esc(nextStep(ep))}</code></div></div>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>Review</h3>${review}</div>
+        <div class="card"><h3>Claims</h3>${claims}</div>
+        ${ep.safety_notes.length ? `<div class="card"><h3>Safety notes</h3><ul class="todo">${ep.safety_notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul></div>` : ""}
+        <div class="card ${land ? "landscape-frames" : ""}"><h3>Scenes</h3>${scenes}</div>
+      </div>
+    </div>`;
+  main.querySelectorAll("[data-zoom]").forEach((img) => img.onclick = () => {
+    const d = document.getElementById("zoom"); d.querySelector("img").src = img.src; d.showModal();
+  });
+}
+
+function render() { renderList(); renderMain(); }
+
+async function load() {
+  const data = await (await fetch("/api/episodes")).json();
+  // Only re-render when something changed, so a playing video isn't interrupted.
+  const sig = JSON.stringify(data.map((e) => [e.slug, e.updated]));
+  if (sig === lastSig) return;
+  lastSig = sig;
+  episodes = data;
+  const fromHash = decodeURIComponent(location.hash.slice(1));
+  if (!current) current = episodes.some((e) => e.slug === fromHash) ? fromHash : episodes[0]?.slug;
+  const playing = document.querySelector("video") && !document.querySelector("video").paused;
+  playing ? renderList() : render();
+}
+
+document.getElementById("zoom").onclick = (e) => e.currentTarget.close();
+load();
+setInterval(load, 4000);
+</script>
+</body>
+</html>

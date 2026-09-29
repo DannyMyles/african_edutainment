@@ -89,8 +89,12 @@ def run(ep):
         video = concatenate_videoclips([c for c in (intro, video, outro) if c], method="compose")
 
     captions.write_srt(ep.srt, cues, offset=offset)
-    video.write_videofile(str(ep.final), fps=vcfg["fps"], codec="libx264", audio_codec="aac",
+    # Render to a temp name and swap it in at the end, so nothing (e.g. the preview site)
+    # ever sees a half-written final.mp4.
+    partial = ep.final.with_name("final.partial.mp4")
+    video.write_videofile(str(partial), fps=vcfg["fps"], codec="libx264", audio_codec="aac",
                           preset="medium", threads=4, logger=None)
+    partial.replace(ep.final)
     for f in tmp.iterdir():
         f.unlink()
     tmp.rmdir()

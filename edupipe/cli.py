@@ -7,6 +7,8 @@
   edupipe produce <slug> [--mock] [--ai-backgrounds]   # voice + visuals + assemble
   edupipe upload  <slug> [--ai-music] [--dry-run]
   edupipe status  [<slug>]
+  edupipe preview [--port 8765]               # local preview site
+  edupipe play    <slug> [--scene N]           # ffplay, or your default player
 """
 import argparse
 import json
@@ -15,7 +17,7 @@ from datetime import date
 
 import yaml
 
-from . import assemble, review, script, upload, visuals, voice
+from . import assemble, preview, review, script, upload, visuals, voice
 from .project import EPISODES, Episode, PipelineError, channel, slugify
 
 
@@ -88,6 +90,25 @@ def cmd_upload(a):
         print(f"Uploaded as {channel()['youtube']['privacy']}: https://youtu.be/{res['id']}  — publish it in YouTube Studio.")
 
 
+def cmd_preview(a):
+    preview.serve(port=a.port, open_browser=not a.no_open)
+
+
+def cmd_play(a):
+    ep = Episode(a.slug)
+    if a.scene:
+        found = sorted(ep.audio_dir.glob(f"scene_{a.scene:02d}.*")) if ep.audio_dir.exists() else []
+        if not found:
+            raise PipelineError(f"No audio for scene {a.scene}. Run: edupipe produce {a.slug}")
+        target = found[0]
+    else:
+        if not ep.final.exists():
+            raise PipelineError(f"No final.mp4 yet. Run: edupipe produce {a.slug}")
+        target = ep.final
+    print(f"Playing {target.relative_to(ep.dir.parent.parent)}")
+    preview.play(target)
+
+
 def cmd_status(a):
     slugs = [a.slug] if a.slug else sorted(p.name for p in EPISODES.iterdir() if p.is_dir())
     for slug in slugs:
@@ -144,6 +165,16 @@ def main(argv=None):
     u.add_argument("--realistic", action="store_true", help="contains realistic AI footage (disclosure required)")
     u.add_argument("--dry-run", action="store_true", help="print the metadata without uploading")
     u.set_defaults(fn=cmd_upload)
+
+    pv = sub.add_parser("preview", help="open the local preview site")
+    pv.add_argument("--port", type=int, default=8765)
+    pv.add_argument("--no-open", action="store_true", help="don't open a browser")
+    pv.set_defaults(fn=cmd_preview)
+
+    pl = sub.add_parser("play", help="play final.mp4 (or one scene's audio) in a local player")
+    pl.add_argument("slug")
+    pl.add_argument("--scene", type=int, help="play just this scene's voice line")
+    pl.set_defaults(fn=cmd_play)
 
     st = sub.add_parser("status", help="where each episode is")
     st.add_argument("slug", nargs="?")
