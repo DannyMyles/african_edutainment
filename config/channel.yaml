@@ -21,6 +21,7 @@ llm:
   # "gemini" (free tier: Google AI Studio key) or "openai" (paid per use)
   provider: gemini
   gemini_model: gemini-3.8-flash
+  fallback_models: [gemini-3.5-flash, gemini-2.5-flash]   # tried if the main one is busy
   script_model: gpt-4o             # used when provider is "openai"
   image_model: gpt-image-1
 

@@ -62,20 +62,48 @@ def _parse_json(text):
     return json.loads(text[start:end + 1])
 
 
+BUSY = ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "overloaded", "high demand")
+
+
+def _complete(client, model, messages):
+    try:
+        return client.chat.completions.create(
+            model=model, messages=messages, temperature=0.8, response_format={"type": "json_object"})
+    except Exception as err:  # some endpoints reject JSON mode: ask plainly instead
+        if "response_format" in str(err):
+            return client.chat.completions.create(model=model, messages=messages, temperature=0.8)
+        raise
+
+
 def _call_llm(brief):
+    """Free tiers get busy: retry with backoff, then try the fallback models."""
+    import time
+
     client, model = _client()
+    llm = channel()["llm"]
+    models = [model] + [m for m in (llm.get("fallback_models") or []) if m != model]
     messages = [
         {"role": "system", "content": _system_prompt(brief)},
         {"role": "user", "content": _user_prompt(brief)},
     ]
-    try:
-        resp = client.chat.completions.create(
-            model=model, messages=messages, temperature=0.8, response_format={"type": "json_object"})
-    except Exception as err:  # some endpoints reject JSON mode: ask plainly instead
-        if "response_format" not in str(err) and "json" not in str(err).lower():
-            raise PipelineError(f"Script model error: {err}") from err
-        resp = client.chat.completions.create(model=model, messages=messages, temperature=0.8)
-    return _parse_json(resp.choices[0].message.content)
+    last = None
+    for m in models:
+        for attempt in range(3):
+            try:
+                resp = _complete(client, m, messages)
+                if m != model:
+                    print(f"  (used fallback model {m})")
+                return _parse_json(resp.choices[0].message.content)
+            except PipelineError:
+                raise
+            except Exception as err:
+                last = err
+                if not any(k in str(err) for k in BUSY):
+                    raise PipelineError(f"Script model error: {err}") from err
+                wait = 5 * (attempt + 1)
+                print(f"  {m} is busy, retrying in {wait}s…")
+                time.sleep(wait)
+    raise PipelineError(f"All script models are busy right now. Try again in a few minutes. ({last})")
 
 
 def _mock(brief):
