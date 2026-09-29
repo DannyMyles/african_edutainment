@@ -23,7 +23,8 @@ children's YouTube channel ("Jua Crew", working title; ages 5–8). See README.m
 
 ## Tech
 - Python 3.12 venv in `.venv`; run via `./edupipe.sh <command>`.
-- OpenAI (scripts, optional backgrounds), ElevenLabs `eleven_multilingual_v2` (voices),
+- Gemini `gemini-3.8-flash` (default, free tier, via OpenAI-compatible endpoint) or OpenAI
+  for scripts (`llm.provider`); OpenAI images for optional backgrounds, ElevenLabs `eleven_multilingual_v2` (voices),
   MoviePy 2 (assembly; no system ffmpeg — uses imageio-ffmpeg), YouTube Data API v3
   (scope `youtube.upload` only).
 - `edupipe preview` = local read-only site (edupipe/preview.py + static/index.html).

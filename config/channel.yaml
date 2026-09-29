@@ -18,7 +18,10 @@ video:
   music_volume: 0.12
 
 llm:
-  script_model: gpt-4o
+  # "gemini" (free tier: Google AI Studio key) or "openai" (paid per use)
+  provider: gemini
+  gemini_model: gemini-3.8-flash
+  script_model: gpt-4o             # used when provider is "openai"
   image_model: gpt-image-1
 
 voice:

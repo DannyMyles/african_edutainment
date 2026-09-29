@@ -28,7 +28,7 @@ characters behind it.
 ```bash
 cd ~/Desktop/programming/edu-video-pipeline
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # already done
-cp .env.example .env        # add OPENAI_API_KEY and ELEVENLABS_API_KEY
+cp .env.example .env        # add GEMINI_API_KEY (free) and ELEVENLABS_API_KEY
 ```
 
 - **Cast voices:** put each character's ElevenLabs `voice_id` in `config/characters.yaml`.
@@ -112,7 +112,10 @@ secrets/                 YouTube OAuth files (git-ignored)
 
 ## Notes
 
-- Scripts use OpenAI (`gpt-4o` by default; change `llm.script_model` or `SCRIPT_MODEL`).
+- Scripts use Gemini (`gemini-3.8-flash`, free tier) by default, via its OpenAI-compatible
+  endpoint. Set `llm.provider: openai` in config/channel.yaml to use OpenAI instead.
+  Note: on Gemini's free tier Google may use prompts to improve its products; the scripts
+  contain no personal data, but switch to a paid tier if that matters to you.
   Voices use ElevenLabs `eleven_multilingual_v2`.
 - Caption timing is spread across each line's audio in proportion to its length. It's good
   enough for short lines; check `captions.srt` before uploading it as a sidecar.

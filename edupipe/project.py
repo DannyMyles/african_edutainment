@@ -39,7 +39,10 @@ def load_yaml(path):
 
 def channel():
     cfg = load_yaml(ROOT / "config" / "channel.yaml")
-    cfg["llm"]["script_model"] = os.environ.get("SCRIPT_MODEL", cfg["llm"]["script_model"])
+    llm = cfg["llm"]
+    llm["provider"] = os.environ.get("SCRIPT_PROVIDER", llm.get("provider", "openai")).lower()
+    default_model = llm.get("gemini_model") if llm["provider"] == "gemini" else llm["script_model"]
+    llm["model"] = os.environ.get("SCRIPT_MODEL", default_model)
     cfg["llm"]["image_model"] = os.environ.get("IMAGE_MODEL", cfg["llm"]["image_model"])
     return cfg
 

@@ -31,20 +31,51 @@ def _user_prompt(brief):
     return "\n".join(lines)
 
 
-def _call_llm(brief):
-    from openai import OpenAI  # imported lazily so --mock works without the package configured
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-    client = OpenAI()
-    resp = client.chat.completions.create(
-        model=channel()["llm"]["script_model"],
-        response_format={"type": "json_object"},
-        temperature=0.8,
-        messages=[
-            {"role": "system", "content": _system_prompt(brief)},
-            {"role": "user", "content": _user_prompt(brief)},
-        ],
-    )
-    return json.loads(resp.choices[0].message.content)
+
+def _client():
+    """Gemini is reached through its OpenAI-compatible endpoint, so one client does both."""
+    import os
+
+    from openai import OpenAI  # imported lazily so --mock works without keys
+
+    llm = channel()["llm"]
+    if llm["provider"] == "gemini":
+        key = os.environ.get("GEMINI_API_KEY")
+        if not key:
+            raise PipelineError("GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com/apikey")
+        return OpenAI(api_key=key, base_url=GEMINI_BASE_URL), llm["model"]
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise PipelineError("OPENAI_API_KEY is not set (or set llm.provider: gemini in config/channel.yaml).")
+    return OpenAI(), llm["model"]
+
+
+def _parse_json(text):
+    """JSON object from a reply, tolerating ```json fences some models add."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < 0:
+        raise PipelineError("The model didn't return JSON. Try `edupipe script` again.")
+    return json.loads(text[start:end + 1])
+
+
+def _call_llm(brief):
+    client, model = _client()
+    messages = [
+        {"role": "system", "content": _system_prompt(brief)},
+        {"role": "user", "content": _user_prompt(brief)},
+    ]
+    try:
+        resp = client.chat.completions.create(
+            model=model, messages=messages, temperature=0.8, response_format={"type": "json_object"})
+    except Exception as err:  # some endpoints reject JSON mode: ask plainly instead
+        if "response_format" not in str(err) and "json" not in str(err).lower():
+            raise PipelineError(f"Script model error: {err}") from err
+        resp = client.chat.completions.create(model=model, messages=messages, temperature=0.8)
+    return _parse_json(resp.choices[0].message.content)
 
 
 def _mock(brief):
