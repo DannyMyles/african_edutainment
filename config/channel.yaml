@@ -1,0 +1,32 @@
+# Channel-wide settings. Episode-specific choices go in each episode's brief.yaml.
+channel_name: "Jua Crew"          # working title — check trademarks before launch
+default_age: "5-8"
+
+formats:
+  short:   { width: 1080, height: 1920, max_seconds: 60 }
+  episode: { width: 1920, height: 1080, max_seconds: 360 }
+
+video:
+  fps: 30
+  scene_gap_seconds: 0.35          # breathing room after each line
+  ken_burns_zoom: 0.04             # gentle 4% push-in per scene (0 = off)
+  font: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+  caption_font_size: 64            # at 1080px wide; scaled for other widths
+  intro_clip: ""                   # e.g. assets/brand/intro.mp4 (optional)
+  outro_clip: ""
+  music: ""                        # e.g. assets/music/bed.mp3 (human-composed or licensed)
+  music_volume: 0.12
+
+llm:
+  script_model: gpt-4o
+  image_model: gpt-image-1
+
+voice:
+  model: eleven_multilingual_v2
+  output_format: mp3_44100_128
+
+youtube:
+  category_id: "27"                # Education
+  default_tags: ["kids learning", "education", "African kids", "science for kids"]
+  # Only "private" or "unlisted" are allowed from the pipeline; you publish by hand.
+  privacy: private

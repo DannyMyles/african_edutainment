@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+secrets/*
+!secrets/README.md
+episodes/*/
+!episodes/.gitkeep
+*.mp4
+*.mp3
+*.wav
